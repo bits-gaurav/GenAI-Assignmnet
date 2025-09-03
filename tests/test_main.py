@@ -1,11 +1,17 @@
 import pytest
+import sys
+import os
+from unittest.mock import AsyncMock
 from fastapi.testclient import TestClient
+
+# Add the parent directory to the path so we can import app
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app.main import app
 
 client = TestClient(app)
 
-@pytest.mark.asyncio
-async def test_home_route():
+def test_home_route():
     """Test home route returns running message"""
     response = client.get("/")
     assert response.status_code == 200
@@ -22,8 +28,10 @@ async def test_webhook_failure_triggers_alert_and_rollback(monkeypatch):
     async def fake_trigger_rollback(repo: str):
         triggered["rollback"] = True
 
-    monkeypatch.setattr("app.main.send_slack_alert", fake_send_slack_alert)
-    monkeypatch.setattr("app.main.trigger_rollback", fake_trigger_rollback)
+    # Import the module to patch it
+    from app import main
+    monkeypatch.setattr(main, "send_slack_alert", fake_send_slack_alert)
+    monkeypatch.setattr(main, "trigger_rollback", fake_trigger_rollback)
 
     payload = {
         "workflow_run": {"conclusion": "failure"},
@@ -47,8 +55,10 @@ async def test_webhook_success_does_not_trigger(monkeypatch):
     async def fake_trigger_rollback(repo: str):
         triggered["rollback"] = True
 
-    monkeypatch.setattr("app.main.send_slack_alert", fake_send_slack_alert)
-    monkeypatch.setattr("app.main.trigger_rollback", fake_trigger_rollback)
+    # Import the module to patch it
+    from app import main
+    monkeypatch.setattr(main, "send_slack_alert", fake_send_slack_alert)
+    monkeypatch.setattr(main, "trigger_rollback", fake_trigger_rollback)
 
     payload = {
         "workflow_run": {"conclusion": "success"},
