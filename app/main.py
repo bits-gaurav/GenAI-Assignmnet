@@ -5,7 +5,7 @@ import os
 app = FastAPI()
 
 SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+TOKEN = os.getenv("TOKEN")
 
 @app.get("/")
 def home():
@@ -31,6 +31,6 @@ async def send_slack_alert(message: str):
 async def trigger_rollback(repo: str):
     async with httpx.AsyncClient() as client:
         url = f"https://api.github.com/repos/{repo}/dispatches"
-        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        headers = {"Authorization": f"token {TOKEN}"}
         data = {"event_type": "rollback"}
         await client.post(url, headers=headers, json=data)
