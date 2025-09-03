@@ -30,3 +30,22 @@ jobs:
         with:
           name: coverage-report
           path: htmlcov
+
+      - name: Notify on Build Failure
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.WEBHOOK_URL }}/github-webhook" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "workflow_run": {
+                "conclusion": "failure",
+                "name": "${{ github.workflow }}",
+                "head_branch": "${{ github.ref_name }}"
+              },
+              "repository": {
+                "full_name": "${{ github.repository }}"
+              },
+              "sender": {
+                "login": "${{ github.actor }}"
+              }
+            }'
