@@ -1,0 +1,11 @@
+name: Rollback Pipeline
+on:
+  repository_dispatch:
+    types: [rollback]
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollback to last stable version
+        run: echo "Rolling back to last stable Docker image..."
