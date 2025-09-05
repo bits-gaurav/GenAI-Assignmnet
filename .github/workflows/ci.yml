@@ -31,21 +31,41 @@ jobs:
           name: coverage-report
           path: htmlcov
 
-      - name: Notify on Build Failure
+      - name: Notify Slack on Failure
         if: failure()
         run: |
-          curl -X POST "${{ secrets.WEBHOOK_URL }}/github-webhook" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "workflow_run": {
-                "conclusion": "failure",
-                "name": "${{ github.workflow }}",
-                "head_branch": "${{ github.ref_name }}"
-              },
-              "repository": {
-                "full_name": "${{ github.repository }}"
-              },
-              "sender": {
-                "login": "${{ github.actor }}"
-              }
-            }'
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "text": "🚨 **CI/CD Pipeline Failed**\n• Repository: `${{ github.repository }}`\n• Workflow: `${{ github.workflow }}`\n• Branch: `${{ github.ref_name }}`\n• Triggered by: `${{ github.actor }}`\n• Commit: `${{ github.sha }}`\n• View Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                "username": "GitHub Actions",
+                "icon_emoji": ":warning:"
+              }'
+          else
+            echo "SLACK_WEBHOOK_URL not configured, skipping Slack notification"
+          fi
+
+      - name: Notify Webhook Endpoint (Backup)
+        if: failure()
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.WEBHOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.WEBHOOK_URL }}/github-webhook" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "workflow_run": {
+                  "conclusion": "failure",
+                  "name": "${{ github.workflow }}",
+                  "head_branch": "${{ github.ref_name }}"
+                },
+                "repository": {
+                  "full_name": "${{ github.repository }}"
+                },
+                "sender": {
+                  "login": "${{ github.actor }}"
+                }
+              }' || echo "Webhook notification failed"
+          else
+            echo "WEBHOOK_URL not configured, skipping webhook notification"
+          fi
